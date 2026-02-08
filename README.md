@@ -187,7 +187,5 @@ GyroLaser explores **natural interaction in web presentations**, demonstrating h
 **Adityavardhan Reddy**  
 Email: Adityavardhanreddy2006@gmail.com
 
----
 
-⭐ If you find this project useful, consider giving it a star on GitHub!
 
