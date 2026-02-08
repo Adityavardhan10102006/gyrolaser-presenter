@@ -135,53 +135,6 @@ http://localhost:3000
 
 ---
 
-# 📂 Suggested Project Structure
-
-```
-gyrolaser/
-│
-├── server/              # Node.js + Socket.io backend
-├── client-desktop/      # Desktop presentation UI
-├── client-mobile/       # Mobile controller UI
-├── java-backend/        # Optional Spring Boot service
-├── public/              # Static assets
-├── package.json
-└── README.md
-```
-
----
-
-# 🔐 Security Considerations
-
-- Motion sensors require **HTTPS** in production
-- Validate session/room IDs
-- Prevent unauthorized socket connections
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome.
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Submit a pull request
-
----
-
-# 📄 License
-
-This project is licensed under the **MIT License**.
-
----
-
-# 💡 Inspiration
-
-GyroLaser explores **natural interaction in web presentations**, demonstrating how everyday mobile sensors can replace traditional hardware presentation tools.
-
----
-
 # 👤 Author
 
 **Adityavardhan Reddy**  
