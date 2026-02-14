@@ -27,7 +27,9 @@ const io = new Server(server, {
   cors: {
     origin: [
       "https://gyrolaser-presenter.vercel.app",
-      "http://localhost:3000"
+      "http://localhost:3000",
+      "https://gyrolaser-presenter-wsg9.vercel.app"
+
     ],
     methods: ["GET", "POST"],
     credentials: true
