@@ -64,7 +64,7 @@ app.get('/api/qrcode/:roomId', (req, res) => {
     return;
   }
 
-  const mobileUrl = `http://${HOST}:${PORT}/mobile?room=${roomId}`;
+  const mobileUrl = `https://gyrolaser-presenter-wsg9.vercel.app/mobile?room=${roomId}`;
 
   QRCode.toBuffer(mobileUrl, { type: 'png', width: 256, margin: 2 })
     .then((buffer) => {
