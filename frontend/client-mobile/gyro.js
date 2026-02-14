@@ -4,7 +4,7 @@
  */
 
 // Configuration
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'https://gyrolaser.onrender.com';
 const UPDATE_RATE = 60; // Updates per second (FPS)
 const UPDATE_INTERVAL = 1000 / UPDATE_RATE;
 
