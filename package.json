@@ -1,0 +1,17 @@
+{
+  "name": "gyrolaser",
+  "version": "1.0.0",
+  "description": "GyroLaser - Real-time gyroscope laser pointer (viewer + mobile controller)",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "qrcode": "^1.5.3",
+    "socket.io": "^4.6.1"
+  }
+}

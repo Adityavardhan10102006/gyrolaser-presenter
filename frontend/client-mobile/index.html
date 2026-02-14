@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>GyroLaser - Mobile Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">GyroLaser Controller</h1>
+            <p class="subtitle">Motion-Controlled Laser Pointer</p>
+        </div>
+
+        <!-- Connection Card -->
+        <div class="card">
+            <h2 class="card-title">Connection</h2>
+            
+            <!-- Room ID Input -->
+            <div class="input-group">
+                <label for="roomIdInput">Room ID</label>
+                <input 
+                    type="text" 
+                    id="roomIdInput" 
+                    placeholder="Enter room ID"
+                    class="input-field"
+                >
+            </div>
+
+            <!-- Connect Button -->
+            <button id="connectBtn" class="btn btn-primary">
+                Connect to Room
+            </button>
+
+            <!-- Status Indicator -->
+            <div class="status-indicator" id="statusIndicator">
+                <div class="status-dot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+
+        <!-- Motion Control Card -->
+        <div class="card" id="motionCard" style="display: none;">
+            <h2 class="card-title">Motion Control</h2>
+            
+            <!-- Permission Button -->
+            <button id="permissionBtn" class="btn btn-secondary">
+                Enable Motion Sensors
+            </button>
+
+            <!-- Instructions -->
+            <div class="instructions" id="instructions" style="display: none;">
+                <div class="instruction-icon">📱</div>
+                <p class="instruction-text">
+                    Move your phone to control the laser pointer
+                </p>
+                <ul class="instruction-list">
+                    <li>Tilt left/right to move horizontally</li>
+                    <li>Tilt up/down to move vertically</li>
+                    <li>Keep phone upright for best results</li>
+                </ul>
+            </div>
+
+            <!-- Motion Data Display (for debugging) -->
+            <div class="debug-info" id="debugInfo" style="display: none;">
+                <h3 class="debug-title">Motion Data</h3>
+                <div class="debug-item">
+                    <span>X:</span>
+                    <span id="debugX">0.00</span>
+                </div>
+                <div class="debug-item">
+                    <span>Y:</span>
+                    <span id="debugY">0.00</span>
+                </div>
+                <div class="debug-item">
+                    <span>Alpha:</span>
+                    <span id="debugAlpha">0</span>
+                </div>
+                <div class="debug-item">
+                    <span>Beta:</span>
+                    <span id="debugBeta">0</span>
+                </div>
+                <div class="debug-item">
+                    <span>Gamma:</span>
+                    <span id="debugGamma">0</span>
+                </div>
+            </div>
+
+            <!-- Stop Button -->
+            <button id="stopBtn" class="btn btn-danger" style="display: none;">
+                Stop Controlling
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Make sure desktop viewer is open first</p>
+        </div>
+    </div>
+
+    <!-- Socket.io Client Library -->
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="gyro.js"></script>
+</body>
+</html>
