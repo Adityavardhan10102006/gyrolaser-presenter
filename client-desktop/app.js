@@ -4,7 +4,7 @@
  */
 
 // Configuration
-const SERVER_URL = 'https://gyrolaser.onrender.com';
+const SERVER_URL = 'https://gyrolaser-presenter-1.onrender.com';
 
 // DOM Elements
 const laserDot = document.getElementById('laserDot');
