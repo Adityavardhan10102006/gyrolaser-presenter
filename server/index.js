@@ -24,7 +24,9 @@ const server = http.createServer(app);
 
 // Socket.io attached to same HTTP server
 const io = new Server(server, {
-  cors: { origin: '*' },
+  cors: { origin: '*' ,
+     methods: ["GET", "POST"]
+  },
   pingInterval: 10000,
   pingTimeout: 5000
 });
