@@ -4,7 +4,7 @@
  */
 
 // Configuration
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'https://gyrolaser.onrender.com';
 
 // DOM Elements
 const laserDot = document.getElementById('laserDot');
