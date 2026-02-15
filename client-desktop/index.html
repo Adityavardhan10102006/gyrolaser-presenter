@@ -12,6 +12,9 @@
         <span class="room-label">Room ID:</span>
         <span class="room-id" id="roomId">Loading...</span>
         <span class="connection-status" id="connectionStatus">Disconnected</span>
+        <input type="file" id="pptUpload" accept=".pdf,.pptx" />
+        <span id="pptStatus"></span>
+
     </div>
 
     <!-- QR Code Section -->
@@ -37,6 +40,7 @@
             <ul class="slide-content">
                 <li>Connect your mobile device</li>
                 <li>Grant motion sensor permissions</li>
+                <li>Add your file(.pptx or .pdf)</li>
                 <li>Move your phone to control the laser</li>
                 <li>Present with freedom</li>
             </ul>
@@ -44,10 +48,9 @@
 
         <!-- Slide 3: Thank You -->
         <div class="slide" data-slide="3">
-            <h1 class="slide-title">Thank You!</h1>
-            <p class="slide-subtitle">Questions?</p>
-            <div class="slide-footer">Built with WebSockets & Gyroscope API</div>
+            <canvas id="pptCanvas"></canvas>
         </div>
+
 
         <!-- Laser Pointer Dot -->
         <div class="laser-dot" id="laserDot"></div>
@@ -60,6 +63,7 @@
 
     <!-- Socket.io Client Library -->
     <script src="https://gyrolaser-presenter-1.onrender.com/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="app.js"></script>
 </body>
 

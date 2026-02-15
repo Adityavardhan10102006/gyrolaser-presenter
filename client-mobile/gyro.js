@@ -25,6 +25,13 @@ const debugY = document.getElementById('debugY');
 const debugAlpha = document.getElementById('debugAlpha');
 const debugBeta = document.getElementById('debugBeta');
 const debugGamma = document.getElementById('debugGamma');
+const sensitivitySlider = document.getElementById("sensitivity");
+let sensitivity = 1.2;
+
+sensitivitySlider.oninput = () => {
+    sensitivity = parseFloat(sensitivitySlider.value);
+};
+
 
 // State
 let socket = null;
@@ -180,6 +187,16 @@ function stopTracking() {
  * Handle device orientation event
  * @param {DeviceOrientationEvent} event - Orientation data
  */
+window.addEventListener("deviceorientation", (e) => {
+    let x = (e.gamma + 45) / 90;
+    let y = (e.beta + 45) / 90;
+
+    x = Math.min(Math.max(x * sensitivity, 0), 1);
+    y = Math.min(Math.max(y * sensitivity, 0), 1);
+
+    socket.emit("laser-move", { x, y });
+});
+
 function handleOrientation(event) {
     if (!isConnected || !isTracking) return;
     
