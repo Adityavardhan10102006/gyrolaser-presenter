@@ -187,15 +187,6 @@ function stopTracking() {
  * Handle device orientation event
  * @param {DeviceOrientationEvent} event - Orientation data
  */
-window.addEventListener("deviceorientation", (e) => {
-    let x = (e.gamma + 45) / 90;
-    let y = (e.beta + 45) / 90;
-
-    x = Math.min(Math.max(x * sensitivity, 0), 1);
-    y = Math.min(Math.max(y * sensitivity, 0), 1);
-
-    socket.emit("laser-move", { x, y });
-});
 
 function handleOrientation(event) {
     if (!isConnected || !isTracking) return;
@@ -231,18 +222,19 @@ function handleOrientation(event) {
  */
 function convertToCoordinates(alpha, beta, gamma) {
     // X-axis: Use gamma (left-right tilt)
-    // Range: -45 to 45 degrees maps to 0-1
     let x = (gamma + 45) / 90;
-    
+
     // Y-axis: Use beta (front-back tilt)
-    // Range: -90 to 90 degrees maps to 0-1
-    // Note: Adjust based on typical phone holding angle
     let y = (beta + 90) / 180;
-    
+
+    // --- ADD SENSITIVITY HERE ---
+    x = x * sensitivity;
+    y = y * sensitivity;
+
     // Clamp values between 0 and 1
     x = Math.max(0, Math.min(1, x));
     y = Math.max(0, Math.min(1, y));
-    
+
     return { x, y };
 }
 
