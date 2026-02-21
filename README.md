@@ -38,6 +38,12 @@ GyroLaser consists of **three main components**:
 - Socket.io → Bi‑directional realtime communication
 - Session pairing (QR / Room ID)
 
+**Java (Optional Enhancement)**
+- Spring Boot API for:
+  - Presentation storage
+  - User/session management
+  - Analytics & logs
+
 ---
 
 # 🧰 Tech Stack
