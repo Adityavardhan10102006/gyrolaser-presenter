@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * GyroLaser Backend
  * Express HTTP server + Socket.io for room pairing and real-time laser relay
@@ -90,3 +91,29 @@ server.listen(PORT, () => {
   console.log('  /mobile  → controller (gyro laser)');
   console.log('  /api/qrcode/:roomId → QR code PNG');
 });
+=======
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+
+// Create io instance
+const io = new Server(server);
+
+// Serve static files from client-desktop
+app.use(express.static(path.join(__dirname, '../client-desktop')));
+
+// Serve mobile files at /mobile route
+app.use('/mobile', express.static(path.join(__dirname, '../client-mobile')));
+
+// Initialize socket.io - pass both io and server
+require('./socket')(io, server);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
+>>>>>>> 1c1bc0e (updated)

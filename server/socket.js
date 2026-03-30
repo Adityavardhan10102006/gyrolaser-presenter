@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * Socket.io room and laser relay logic for GyroLaser
  * Handles viewer/controller pairing and real-time laser position forwarding
@@ -118,3 +119,110 @@ function attachSocketHandlers(io) {
 }
 
 module.exports = { attachSocketHandlers };
+=======
+module.exports = (io, server) => {
+    // Store room data
+    const rooms = new Map();
+
+    io.on('connection', (socket) => {
+        console.log('User connected:', socket.id);
+
+        let currentRoomId = null;
+        let currentRole = null;
+
+        /**
+         * Handle joining a room
+         */
+        socket.on('join-room', ({ roomId, role }) => {
+            // Validate room ID
+            if (!roomId || typeof roomId !== 'string') {
+                socket.emit('error', { message: 'Invalid room ID' });
+                return;
+            }
+
+            // Limit room ID length
+            if (roomId.length > 50) {
+                socket.emit('error', { message: 'Room ID too long' });
+                return;
+            }
+
+            // Sanitize room ID
+            roomId = roomId.trim().toUpperCase();
+
+            // Join the room
+            socket.join(roomId);
+            currentRoomId = roomId;
+            currentRole = role;
+
+            console.log(`User ${socket.id} joined room ${roomId} as ${role}`);
+
+            // Initialize room if not exists
+            if (!rooms.has(roomId)) {
+                rooms.set(roomId, {
+                    presenter: null,
+                    controller: null
+                });
+            }
+
+            const room = rooms.get(roomId);
+
+            // Notify others in the room
+            if (role === 'controller') {
+                room.controller = socket.id;
+                socket.to(roomId).emit('controller-joined', { socketId: socket.id });
+            } else if (role === 'presenter') {
+                room.presenter = socket.id;
+            }
+        });
+
+        /**
+         * Handle laser movement from controller
+         */
+        socket.on('laser-move', (data) => {
+            // Validate laser data
+            if (!data) return;
+
+            // Ensure data.x and data.y are numbers
+            if (typeof data.x !== 'number' || typeof data.y !== 'number') {
+                return;
+            }
+
+            // Clamp values between 0 and 1
+            const x = Math.max(0, Math.min(1, data.x));
+            const y = Math.max(0, Math.min(1, data.y));
+
+            // Broadcast to others in the room (presenter)
+            if (currentRoomId) {
+                socket.to(currentRoomId).emit('laser-move', { x, y });
+            }
+        });
+
+        /**
+         * Handle disconnection
+         */
+        socket.on('disconnect', () => {
+            console.log('User disconnected:', socket.id);
+
+            // Clean up room data
+            if (currentRoomId && rooms.has(currentRoomId)) {
+                const room = rooms.get(currentRoomId);
+
+                if (room.controller === socket.id) {
+                    room.controller = null;
+                    socket.to(currentRoomId).emit('controller-left', { socketId: socket.id });
+                }
+                if (room.presenter === socket.id) {
+                    room.presenter = null;
+                }
+
+                // Remove room if empty
+                if (!room.controller && !room.presenter) {
+                    rooms.delete(currentRoomId);
+                }
+            }
+        });
+    });
+
+    console.log('Socket.io server initialized');
+};
+>>>>>>> 1c1bc0e (updated)
