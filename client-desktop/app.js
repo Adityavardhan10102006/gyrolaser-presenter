@@ -4,53 +4,16 @@
  */
 
 // Configuration
-const SERVER_URL = 'https://gyrolaser-presenter-1.onrender.com';
+const SERVER_URL = 'http://localhost:3000';
+const ROOM_ID = 'room-' + Math.random().toString(36).substr(2, 9);
 
 // DOM Elements
 const laserDot = document.getElementById('laserDot');
 const roomIdDisplay = document.getElementById('roomId');
 const connectionStatus = document.getElementById('connectionStatus');
-const qrSection = document.getElementById('qrSection');
 const slideContainer = document.getElementById('slideContainer');
 const currentSlideDisplay = document.getElementById('currentSlide');
 const totalSlidesDisplay = document.getElementById('totalSlides');
-const uploadInput = document.getElementById("pptUpload");
-const pptStatus = document.getElementById("pptStatus");
-const canvas = document.getElementById("pptCanvas");
-const ctx = canvas.getContext("2d");
-
-uploadInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    qrSection.style.display = "none";
-    pptStatus.textContent = "Presentation Loaded";
-
-    if (file.type === "application/pdf") {
-        renderPDF(file);
-    } else {
-        alert("Only PDF is supported for now.");
-    }
-
-    goToSlide(3);
-});
-
-async function renderPDF(file) {
-    const url = URL.createObjectURL(file);
-    const pdf = await pdfjsLib.getDocument(url).promise;
-    const page = await pdf.getPage(1);
-
-    const viewport = page.getViewport({ scale: 1.5 });
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({
-        canvasContext: ctx,
-        viewport: viewport
-    }).promise;
-}
-
-
 
 // State
 let socket = null;
@@ -67,28 +30,15 @@ function initSocket() {
     socket.on('connect', () => {
         console.log('Connected to server');
         updateConnectionStatus(true);
-        roomIdDisplay.textContent = '...';
-        // Join as viewer; server will create room and emit room-created
-        socket.emit('join-room', { role: 'viewer' });
+        
+        // Join room as viewer
+        socket.emit('join-room', {
+            roomId: ROOM_ID,
+            role: 'viewer'
+        });
+        
+        roomIdDisplay.textContent = ROOM_ID;
     });
-
-    // Server assigns room ID (6-char)
-    socket.on('room-created', (data) => {
-        const roomId = data.roomId || '';
-        roomIdDisplay.textContent = roomId;
-        showQrCode(roomId);
-    });
-
-    socket.on('controller-joined', () => {
-        console.log('Controller joined');
-    });
-
-    socket.on('controller-left', () => {
-        console.log('Controller left');
-        hideLaser();
-    });
-
-    socket.on('viewer-left', () => {});
 
     // Connection lost
     socket.on('disconnect', () => {
@@ -138,19 +88,6 @@ function updateLaserPosition(x, y) {
     
     // Update laser dot position with smooth transform
     laserDot.style.transform = `translate(${pixelX}px, ${pixelY}px)`;
-    let smoothX = 0;
-    let smoothY = 0;
-
-    socket.on("laser-move", ({ x, y }) => {
-        const rect = canvas.getBoundingClientRect();
-
-        smoothX += (x - smoothX) * 0.2;
-        smoothY += (y - smoothY) * 0.2;
-
-        laserDot.style.left = rect.left + smoothX * rect.width + "px";
-       laserDot.style.top = rect.top + smoothY * rect.height + "px";
-    });
-
     
     // Show laser if hidden
     if (!laserDot.classList.contains('visible')) {
@@ -170,19 +107,6 @@ function showLaser() {
  */
 function hideLaser() {
     laserDot.classList.remove('visible');
-}
-
-/**
- * Show QR code for mobile join URL
- * @param {string} roomId - 6-char room ID
- */
-function showQrCode(roomId) {
-    if (!qrSection || !roomId) return;
-    const img = document.createElement('img');
-    img.alt = 'Scan to connect mobile';
-    img.src = SERVER_URL + '/api/qrcode/' + encodeURIComponent(roomId);
-    qrSection.innerHTML = '';
-    qrSection.appendChild(img);
 }
 
 /**
@@ -267,7 +191,7 @@ function initKeyboardNavigation() {
 
 /**
  * Initialize application
- */ 
+ */
 function init() {
     console.log('Initializing GyroLaser Desktop Viewer...');
     
@@ -280,7 +204,7 @@ function init() {
     // Connect to Socket.io server
     initSocket();
     
-    console.log('Desktop Viewer ready.');
+    console.log('Desktop Viewer ready. Room ID:', ROOM_ID);
 }
 
 // Start application when DOM is loaded
