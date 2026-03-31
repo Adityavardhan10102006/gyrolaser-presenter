@@ -4,7 +4,10 @@
  */
 
 // --- 0. Global State ---
-let socket = io(); // Connects automatically to origin since we serve statically
+const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://gyrolaser-presenter-1.onrender.com';
+let socket = io(BACKEND_URL);
 let roomId = generateRoomId();
 
 // Presentation state

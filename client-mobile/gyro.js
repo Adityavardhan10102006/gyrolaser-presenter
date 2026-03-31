@@ -1,8 +1,10 @@
 /**
  * GyroLaser Mobile Controller logic
  */
-
-const socket = io();
+const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://gyrolaser-presenter-1.onrender.com';
+const socket = io(BACKEND_URL);
 
 // DOM Elements
 const connectionPanel = document.getElementById('connectionPanel');
