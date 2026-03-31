@@ -1,94 +1,182 @@
 /**
- * GyroLaser Mobile Controller
- * Captures gyroscope data and sends to Socket.io server
+ * GyroLaser Mobile Controller logic
  */
 
-// Configuration
-const SERVER_URL = 'http://localhost:3000';
-const UPDATE_RATE = 60; // Updates per second (FPS)
-const UPDATE_INTERVAL = 1000 / UPDATE_RATE;
+const socket = io();
 
 // DOM Elements
-const connectBtn = document.getElementById('connectBtn');
-const permissionBtn = document.getElementById('permissionBtn');
-const stopBtn = document.getElementById('stopBtn');
+const connectionPanel = document.getElementById('connectionPanel');
 const roomIdInput = document.getElementById('roomIdInput');
+const connectBtn = document.getElementById('connectBtn');
 const statusIndicator = document.getElementById('statusIndicator');
 const statusText = document.getElementById('statusText');
-const motionCard = document.getElementById('motionCard');
-const instructions = document.getElementById('instructions');
-const debugInfo = document.getElementById('debugInfo');
 
-// Debug elements
-const debugX = document.getElementById('debugX');
-const debugY = document.getElementById('debugY');
-const debugAlpha = document.getElementById('debugAlpha');
-const debugBeta = document.getElementById('debugBeta');
-const debugGamma = document.getElementById('debugGamma');
+const controlPanel = document.getElementById('controlPanel');
+const permissionBtn = document.getElementById('permissionBtn');
+const activeControls = document.getElementById('activeControls');
+const disconnectBtn = document.getElementById('disconnectBtn');
+
+const valX = document.getElementById('valX');
+const valY = document.getElementById('valY');
+const sensitivitySlider = document.getElementById('sensitivitySlider');
+const sensValue = document.getElementById('sensValue');
 
 // State
-let socket = null;
-let roomId = null;
 let isConnected = false;
 let isTracking = false;
-let lastUpdateTime = 0;
+let roomId = null;
+let sensitivity = 1.0;
 
-/**
- * Connect to Socket.io server
- */
-function connectToServer() {
-    roomId = roomIdInput.value.trim();
-    
-    if (!roomId) {
-        alert('Please enter a room ID');
-        return;
-    }
-    
-    // Disable connect button
-    connectBtn.disabled = true;
-    connectBtn.textContent = 'Connecting...';
-    
-    // Initialize socket connection
-    socket = io(SERVER_URL);
-    
-    // Connection successful
-    socket.on('connect', () => {
-        console.log('Connected to server');
-        
-        // Join room as controller
-        socket.emit('join-room', {
-            roomId: roomId,
-            role: 'controller'
-        });
-        
-        updateConnectionStatus(true);
-        showMotionCard();
-    });
-    
-    // Connection lost
-    socket.on('disconnect', () => {
-        console.log('Disconnected from server');
-        updateConnectionStatus(false);
-        stopTracking();
-    });
-    
-    // Error handling
-    socket.on('connect_error', (error) => {
-        console.error('Connection error:', error);
-        alert('Failed to connect to server. Make sure the server is running.');
-        resetConnection();
-    });
+// Base center anchor to map relative movement
+let baseX = null;
+let baseY = null;
+
+// The current calculated laser pos (normalized 0-1)
+let laserX = 0.5;
+let laserY = 0.5;
+
+// Read query params for auto-fill ROOM ID
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('room')) {
+    roomIdInput.value = urlParams.get('room');
 }
 
-/**
- * Update connection status UI
- * @param {boolean} connected - Connection state
- */
+// ------ Socket Logic ------ //
+socket.on('connect', () => {
+    console.log('Connected to server socket');
+});
+
+socket.on('room-joined', () => {
+    updateConnectionStatus(true);
+    connectionPanel.classList.add('hidden');
+    controlPanel.classList.remove('hidden');
+});
+
+socket.on('error', (err) => {
+    alert('Error: ' + err.message);
+    resetState();
+});
+
+socket.on('disconnect', () => {
+    resetState();
+});
+
+// ------ UI Handlers ------ //
+connectBtn.addEventListener('click', () => {
+    const val = roomIdInput.value.trim().toUpperCase();
+    if (val.length !== 6) {
+        alert("Please enter a valid 6-character room ID.");
+        return;
+    }
+    roomId = val;
+    socket.emit('join-room', { role: 'controller', roomId: roomId });
+});
+
+disconnectBtn.addEventListener('click', () => {
+    socket.emit('trigger-disconnect');
+    resetState();
+});
+
+sensitivitySlider.addEventListener('input', (e) => {
+    sensitivity = parseFloat(e.target.value);
+    sensValue.textContent = sensitivity.toFixed(1);
+    
+    // Recalibrate on sensitivity change
+    baseX = null;
+    baseY = null;
+});
+
+permissionBtn.addEventListener('click', async () => {
+    try {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                enableTracking();
+            } else {
+                alert('Permission denied. Cannot control the laser without gyroscope access.');
+            }
+        } else {
+            // Android / Non-iOS 13+
+            enableTracking();
+        }
+    } catch (e) {
+        alert('Error accessing motion sensors: ' + e.message);
+    }
+});
+
+// ------ Orientation Logic ------ //
+function enableTracking() {
+    isTracking = true;
+    permissionBtn.classList.add('hidden');
+    activeControls.classList.remove('hidden');
+    
+    // Reset calibration
+    baseX = null;
+    baseY = null;
+    laserX = 0.5;
+    laserY = 0.5;
+
+    window.addEventListener('deviceorientation', handleOrientation);
+}
+
+function disableTracking() {
+    isTracking = false;
+    permissionBtn.classList.remove('hidden');
+    activeControls.classList.add('hidden');
+    window.removeEventListener('deviceorientation', handleOrientation);
+}
+
+// Emitting data at a locked frame rate (e.g., 30 fps) to avoid socket flood
+let lastEmit = 0;
+const EMIT_INTERVAL = 1000 / 30;
+
+function handleOrientation(event) {
+    if (!isConnected || !isTracking) return;
+    
+    // gamma is left-to-right (-90 to 90)
+    // beta is front-to-back (-180 to 180)
+    let b = event.beta;
+    let g = event.gamma;
+    
+    // Calibration pass
+    if (baseX === null || baseY === null) {
+        baseX = g;
+        baseY = b;
+        return;
+    }
+
+    // Delta mapping (relative to when calibrated)
+    // deltaG (X movement), deltaB (Y movement)
+    let deltaG = g - baseX;
+    let deltaB = b - baseY;
+
+    // Apply sensitivity mapping
+    // We assume roughly 40 degrees of tilt corresponds to a full screen sweep
+    let mapSize = 40 / sensitivity;
+
+    laserX = 0.5 + (deltaG / mapSize);
+    laserY = 0.5 + (deltaB / mapSize); // inverted depending on grip
+
+    // Clamp values 0 to 1
+    laserX = Math.max(0, Math.min(1, laserX));
+    laserY = Math.max(0, Math.min(1, laserY));
+
+    // Update HUD visually
+    valX.textContent = laserX.toFixed(2);
+    valY.textContent = laserY.toFixed(2);
+
+    // Throttle emit
+    const now = Date.now();
+    if (now - lastEmit > EMIT_INTERVAL) {
+        socket.emit('laser-move', { x: laserX, y: laserY });
+        lastEmit = now;
+    }
+}
+
 function updateConnectionStatus(connected) {
     isConnected = connected;
-    
     if (connected) {
-        statusText.textContent = 'Connected';
+        statusText.textContent = 'Linked to ' + roomId;
         statusIndicator.classList.add('connected');
     } else {
         statusText.textContent = 'Disconnected';
@@ -96,225 +184,10 @@ function updateConnectionStatus(connected) {
     }
 }
 
-/**
- * Show motion control card
- */
-function showMotionCard() {
-    motionCard.style.display = 'block';
-}
-
-/**
- * Request device motion permissions
- */
-async function requestMotionPermission() {
-    try {
-        // iOS 13+ requires explicit permission
-        if (typeof DeviceOrientationEvent !== 'undefined' && 
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
-            
-            const permission = await DeviceOrientationEvent.requestPermission();
-            
-            if (permission === 'granted') {
-                startTracking();
-            } else {
-                alert('Motion permission denied. Please enable in settings.');
-            }
-        } else {
-            // Android or older iOS - no permission needed
-            startTracking();
-        }
-    } catch (error) {
-        console.error('Permission error:', error);
-        alert('Error requesting motion permission: ' + error.message);
-    }
-}
-
-/**
- * Start tracking device orientation
- */
-function startTracking() {
-    if (isTracking) return;
-    
-    isTracking = true;
-    
-    // Add orientation event listener
-    window.addEventListener('deviceorientation', handleOrientation, true);
-    
-    // Update UI
-    permissionBtn.style.display = 'none';
-    instructions.style.display = 'block';
-    stopBtn.style.display = 'block';
-    debugInfo.style.display = 'block';
-    
-    console.log('Motion tracking started');
-}
-
-/**
- * Stop tracking device orientation
- */
-function stopTracking() {
-    if (!isTracking) return;
-    
-    isTracking = false;
-    
-    // Remove orientation event listener
-    window.removeEventListener('deviceorientation', handleOrientation, true);
-    
-    // Update UI
-    permissionBtn.style.display = 'block';
-    instructions.style.display = 'none';
-    stopBtn.style.display = 'none';
-    debugInfo.style.display = 'none';
-    
-    console.log('Motion tracking stopped');
-}
-
-/**
- * Handle device orientation event
- * @param {DeviceOrientationEvent} event - Orientation data
- */
-function handleOrientation(event) {
-    if (!isConnected || !isTracking) return;
-    
-    // Throttle updates based on UPDATE_RATE
-    const currentTime = Date.now();
-    if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
-        return;
-    }
-    lastUpdateTime = currentTime;
-    
-    // Get orientation values
-    const alpha = event.alpha || 0; // Compass direction (0-360)
-    const beta = event.beta || 0;   // Front-to-back tilt (-180 to 180)
-    const gamma = event.gamma || 0; // Left-to-right tilt (-90 to 90)
-    
-    // Convert to normalized coordinates (0-1)
-    const coordinates = convertToCoordinates(alpha, beta, gamma);
-    
-    // Send to server
-    sendLaserPosition(coordinates.x, coordinates.y);
-    
-    // Update debug display
-    updateDebugDisplay(coordinates.x, coordinates.y, alpha, beta, gamma);
-}
-
-/**
- * Convert gyroscope values to normalized screen coordinates
- * @param {number} alpha - Compass direction (0-360)
- * @param {number} beta - Front-to-back tilt (-180 to 180)
- * @param {number} gamma - Left-to-right tilt (-90 to 90)
- * @returns {{x: number, y: number}} Normalized coordinates (0-1)
- */
-function convertToCoordinates(alpha, beta, gamma) {
-    // X-axis: Use gamma (left-right tilt)
-    // Range: -45 to 45 degrees maps to 0-1
-    let x = (gamma + 45) / 90;
-    
-    // Y-axis: Use beta (front-back tilt)
-    // Range: -90 to 90 degrees maps to 0-1
-    // Note: Adjust based on typical phone holding angle
-    let y = (beta + 90) / 180;
-    
-    // Clamp values between 0 and 1
-    x = Math.max(0, Math.min(1, x));
-    y = Math.max(0, Math.min(1, y));
-    
-    return { x, y };
-}
-
-/**
- * Send laser position to server
- * @param {number} x - Normalized x coordinate (0-1)
- * @param {number} y - Normalized y coordinate (0-1)
- */
-function sendLaserPosition(x, y) {
-    if (!socket || !isConnected) return;
-    
-    socket.emit('laser-move', {
-        x: x,
-        y: y
-    });
-}
-
-/**
- * Update debug display
- */
-function updateDebugDisplay(x, y, alpha, beta, gamma) {
-    debugX.textContent = x.toFixed(2);
-    debugY.textContent = y.toFixed(2);
-    debugAlpha.textContent = Math.round(alpha);
-    debugBeta.textContent = Math.round(beta);
-    debugGamma.textContent = Math.round(gamma);
-}
-
-/**
- * Reset connection state
- */
-function resetConnection() {
-    connectBtn.disabled = false;
-    connectBtn.textContent = 'Connect to Room';
+function resetState() {
     updateConnectionStatus(false);
-    stopTracking();
-    
-    if (socket) {
-        socket.disconnect();
-        socket = null;
-    }
+    disableTracking();
+    connectionPanel.classList.remove('hidden');
+    controlPanel.classList.add('hidden');
+    roomId = null;
 }
-
-/**
- * Initialize event listeners
- */
-function initEventListeners() {
-    // Connect button
-    connectBtn.addEventListener('click', connectToServer);
-    
-    // Permission button
-    permissionBtn.addEventListener('click', requestMotionPermission);
-    
-    // Stop button
-    stopBtn.addEventListener('click', stopTracking);
-    
-    // Enter key on room ID input
-    roomIdInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-            connectToServer();
-        }
-    });
-}
-
-/**
- * Initialize application
- */
-function init() {
-    console.log('Initializing GyroLaser Mobile Controller...');
-    
-    // Check for device orientation support
-    if (!window.DeviceOrientationEvent) {
-        alert('Device orientation not supported on this device');
-        return;
-    }
-    
-    // Initialize event listeners
-    initEventListeners();
-    
-    console.log('Mobile Controller ready');
-}
-
-// Start application when DOM is loaded
-document.addEventListener('DOMContentLoaded', init);
-
-// Handle page visibility changes
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        // Page hidden - pause tracking
-        if (isTracking) {
-            console.log('Page hidden - pausing tracking');
-        }
-    } else {
-        // Page visible - resume tracking if was active
-        if (isTracking) {
-            console.log('Page visible - resuming tracking');
-        }
-    }
-});

@@ -1,490 +1,303 @@
-/* Reset and Base Styles */
+/* 
+ * GyroLaser - Cinematic Presentation Styles
+ * Vibrant colors, glassmorphism, dynamic animations, modern typography
+ */
+
+:root {
+  --bg-color: #050505;
+  --text-primary: #e0e0e0;
+  --accent-blue: #0ea5e9;
+  --accent-cyan: #2dd4bf;
+  --laser-color: #ff3366;
+  --glass-bg: rgba(15, 23, 42, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-    background: #0a0a0a;
-    color: #ffffff;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  overflow: hidden; /* No scrolling allowed */
+  width: 100vw;
+  height: 100vh;
 }
 
-/* Animated Background */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
-    animation: backgroundShift 20s ease infinite;
-    pointer-events: none;
+/* Scene Management */
+.scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.5s ease;
 }
 
-@keyframes backgroundShift {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(1.1); }
+.scene.active {
+  pointer-events: auto;
+  opacity: 1;
 }
 
-/* Room Info Bar */
-.room-info {
-    position: fixed;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(15, 15, 25, 0.85);
-    padding: 16px 32px;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    z-index: 100;
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    animation: slideDown 0.6s ease-out;
+/* --------------------
+   SCENE 1: 3D Minimal Desk
+----------------------- */
+#scene1 {
+  z-index: 30;
+}
+#deskCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+.prompt-text {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.2rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  animation: pulseOpacity 2s infinite ease-in-out;
+  cursor: pointer;
+  z-index: 2;
+  font-family: 'Inter', sans-serif;
+  pointer-events: auto; /* Allow clicking the text directly */
+}
+@keyframes pulseOpacity {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
+/* --------------------
+   SCENE 2: BIOS Boot
+----------------------- */
+#scene2 {
+  background: black;
+  z-index: 40;
+}
+#biosContainer {
+  font-family: 'Share Tech Mono', monospace;
+  color: #0f0;
+  padding: 2rem;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  display: flex;
+  flex-direction: column;
 }
 
-.room-label {
-    font-size: 13px;
-    color: #8b8b9a;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    font-weight: 600;
+.blinking-cursor {
+  animation: blink 1s step-end infinite;
+  display: inline-block;
+  margin-left: 4px;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.room-id {
-    font-size: 18px;
-    font-weight: 700;
-    color: #00f5a0;
-    letter-spacing: 2px;
-    font-family: 'Courier New', monospace;
-    text-shadow: 0 0 20px rgba(0, 245, 160, 0.5);
-    padding: 4px 12px;
-    background: rgba(0, 245, 160, 0.1);
-    border-radius: 8px;
+/* --------------------
+   SCENE 3: Main System UI
+----------------------- */
+#scene3 {
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top, #111827 0%, #000000 100%);
 }
 
-.connection-status {
-    font-size: 12px;
-    padding: 6px 16px;
-    border-radius: 20px;
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  height: 70px;
 }
 
-.connection-status.connected {
-    background: rgba(0, 245, 160, 0.2);
-    color: #00f5a0;
-    border: 1px solid rgba(0, 245, 160, 0.3);
-    animation: pulse 2s ease infinite;
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+.logo {
+  font-weight: 600;
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* QR Code Section */
-.qr-section {
-    position: fixed;
-    top: 100px;
-    right: 40px;
-    background: rgba(255, 255, 255, 0.98);
-    padding: 24px;
-    border-radius: 20px;
-    z-index: 99;
-    box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        0 0 1px rgba(255, 255, 255, 0.5);
-    animation: fadeInRight 0.8s ease-out;
-    backdrop-filter: blur(10px);
+.room-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.1rem;
+  color: #a3a3a3;
+}
+.room-pill strong {
+  color: #fff;
+  letter-spacing: 1px;
 }
 
-@keyframes fadeInRight {
-    from {
-        opacity: 0;
-        transform: translateX(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+.nav-center .status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(0,0,0,0.3);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  transition: all 0.3s;
 }
 
-.qr-placeholder {
-    width: 160px;
-    height: 160px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
-    border: 3px dashed #cbd5e0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16px;
-    color: #718096;
-    transition: all 0.3s ease;
+.status-indicator .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444; /* disconnected red */
+  box-shadow: 0 0 10px #ef4444;
+}
+.status-indicator.connected .dot {
+  background: #22c55e;
+  box-shadow: 0 0 10px #22c55e;
 }
 
-.qr-placeholder:hover {
-    border-color: #a0aec0;
-    transform: scale(1.02);
+.upload-btn {
+  background: linear-gradient(135deg, var(--accent-blue), #3b82f6);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+}
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+}
+#pdfUpload {
+  display: none;
 }
 
-.qr-placeholder p {
-    font-weight: 700;
-    margin-bottom: 6px;
-    font-size: 14px;
-    color: #4a5568;
+/* Presentation Area */
+.presentation-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
 }
 
-.qr-placeholder small {
-    font-size: 11px;
-    color: #a0aec0;
+.empty-state {
+  text-align: center;
+  color: #6b7280;
+}
+.empty-state h3 {
+  font-size: 1.8rem;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
 }
 
-/* Slide Container */
-.slide-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background: 
-        linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
-    overflow: hidden;
+#pdfCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  border-radius: 8px;
+  transition: opacity 0.5s ease;
+}
+.hidden {
+  display: none !important;
 }
 
-.slide-container::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: 
-        radial-gradient(circle at 30% 40%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 70% 60%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
-    animation: rotate 30s linear infinite;
-    pointer-events: none;
+.slide-counter {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.2rem;
 }
 
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Individual Slides */
-.slide {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
-                visibility 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 80px;
-    z-index: 1;
-    transform: translateY(20px);
-}
-
-.slide.active {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-/* Slide Typography */
-.slide-title {
-    font-size: 84px;
-    font-weight: 800;
-    margin-bottom: 24px;
-    text-align: center;
-    background: linear-gradient(135deg, #00f5a0 0%, #00d9f5 50%, #a855f7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: gradientShift 8s ease infinite;
-    background-size: 200% 200%;
-    letter-spacing: -2px;
-    line-height: 1.1;
-    text-shadow: 0 0 80px rgba(0, 245, 160, 0.3);
-}
-
-@keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-}
-
-.slide-subtitle {
-    font-size: 36px;
-    color: #b4b4c8;
-    text-align: center;
-    margin-bottom: 50px;
-    font-weight: 300;
-    letter-spacing: 1px;
-    animation: fadeIn 1s ease-out 0.3s both;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.slide-heading {
-    font-size: 64px;
-    margin-bottom: 50px;
-    background: linear-gradient(135deg, #00f5a0 0%, #00d9f5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 800;
-    letter-spacing: -1px;
-}
-
-.slide-content {
-    list-style: none;
-    font-size: 32px;
-    line-height: 1.8;
-    max-width: 900px;
-}
-
-.slide-content li {
-    padding: 20px 0;
-    padding-left: 40px;
-    margin: 15px 0;
-    position: relative;
-    opacity: 0;
-    animation: slideInLeft 0.6s ease forwards;
-    color: #e5e5ef;
-    font-weight: 400;
-}
-
-.slide-content li:nth-child(1) { animation-delay: 0.1s; }
-.slide-content li:nth-child(2) { animation-delay: 0.2s; }
-.slide-content li:nth-child(3) { animation-delay: 0.3s; }
-.slide-content li:nth-child(4) { animation-delay: 0.4s; }
-
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.slide-content li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 60%;
-    background: linear-gradient(180deg, #00f5a0 0%, #00d9f5 100%);
-    border-radius: 3px;
-    box-shadow: 0 0 20px rgba(0, 245, 160, 0.6);
-}
-
-.slide-footer {
-    position: absolute;
-    bottom: 50px;
-    font-size: 18px;
-    color: #6b6b80;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-}
-
-/* Laser Pointer Dot */
+/* --------------------
+   Laser System Core
+----------------------- */
 .laser-dot {
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    background: radial-gradient(circle, 
-        rgba(255, 50, 50, 1) 0%, 
-        rgba(255, 50, 50, 0.9) 30%, 
-        rgba(255, 50, 50, 0.4) 60%, 
-        transparent 100%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    box-shadow: 
-        0 0 30px rgba(255, 50, 50, 0.8),
-        0 0 60px rgba(255, 50, 50, 0.6),
-        0 0 90px rgba(255, 50, 50, 0.4),
-        inset 0 0 10px rgba(255, 255, 255, 0.5);
-    filter: blur(0.5px);
-    transform: translate(-100px, -100px);
-    animation: laserPulse 1.5s ease-in-out infinite;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  will-change: transform; 
+  /* We use GSAP externally or inline transforms, NO CSS transition to avoid conflict with JS LERP */
+}
+
+.laser-core {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--laser-color), 0 0 20px var(--laser-color);
+  animation: laserPulse 1.5s infinite alternate;
+}
+
+.laser-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(255,51,102,0.4) 0%, rgba(255,51,102,0) 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
 @keyframes laserPulse {
-    0%, 100% { 
-        transform: translate(var(--x, -100px), var(--y, -100px)) scale(1);
-        filter: blur(0.5px);
-    }
-    50% { 
-        transform: translate(var(--x, -100px), var(--y, -100px)) scale(1.1);
-        filter: blur(1px);
-    }
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 1; }
 }
 
-.laser-dot.visible {
-    opacity: 0.95;
-}
-
-.laser-dot::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 8px;
-    height: 8px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
-}
-
-/* Slide Counter */
-.slide-counter {
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    background: rgba(15, 15, 25, 0.85);
-    padding: 14px 28px;
-    border-radius: 30px;
-    font-size: 18px;
-    color: #00f5a0;
-    z-index: 100;
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(0, 245, 160, 0.2);
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        0 0 40px rgba(0, 245, 160, 0.1);
-    animation: fadeInUp 0.8s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-#currentSlide {
-    font-weight: 800;
-    font-size: 28px;
-    color: #00f5a0;
-    text-shadow: 0 0 20px rgba(0, 245, 160, 0.5);
-}
-
-/* Navigation Hint */
-.slide-counter::before {
-    content: '← →';
-    position: absolute;
-    top: -35px;
-    right: 0;
-    font-size: 14px;
-    color: #6b6b80;
-    opacity: 0.6;
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-    .slide-title {
-        font-size: 64px;
-    }
-    
-    .slide-subtitle {
-        font-size: 28px;
-    }
-    
-    .slide-heading {
-        font-size: 48px;
-    }
-    
-    .slide-content {
-        font-size: 24px;
-    }
-}
-
-@media (max-width: 768px) {
-    .slide-title {
-        font-size: 48px;
-    }
-    
-    .slide-subtitle {
-        font-size: 22px;
-    }
-    
-    .slide-heading {
-        font-size: 36px;
-    }
-    
-    .slide-content {
-        font-size: 20px;
-    }
-    
-    .qr-section {
-        display: none;
-    }
-    
-    .room-info {
-        top: 20px;
-        padding: 12px 20px;
-        gap: 12px;
-    }
-}
-
-/* Loading Animation */
-@keyframes spin {
-    to { transform: rotate(360deg); }
+/* Trail segments (optional) handled in JS or via slight delayed elements */
+.laser-trail {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--laser-color);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.5;
+  filter: blur(2px);
+  will-change: transform, opacity;
 }

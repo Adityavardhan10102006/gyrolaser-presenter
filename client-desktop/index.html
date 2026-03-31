@@ -3,63 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GyroLaser - Desktop Viewer</title>
+    <title>GyroLaser - Cinematic Presentation</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Room ID Display -->
-    <div class="room-info">
-        <span class="room-label">Room ID:</span>
-        <span class="room-id" id="roomId">Loading...</span>
-        <span class="connection-status" id="connectionStatus">Disconnected</span>
+    
+    <!-- Scene 1: 3D Minimal Desk -->
+    <div id="scene1" class="scene active">
+        <canvas id="deskCanvas"></canvas>
+        <div id="startPrompt" class="prompt-text">Click anywhere to begin</div>
     </div>
 
-    <!-- QR Code Section -->
-    <div class="qr-section" id="qrSection">
-        <div class="qr-placeholder">
-            <p>QR Code Here</p>
-            <small>Scan with mobile device</small>
+    <!-- Scene 2: BIOS Boot -->
+    <div id="scene2" class="scene">
+        <div id="biosContainer">
+            <div id="biosLogs"></div>
+            <div id="biosCursor" class="blinking-cursor">_</div>
         </div>
     </div>
 
-    <!-- Slide Container -->
-    <div class="slide-container" id="slideContainer">
-        <!-- Slide 1: Title -->
-        <div class="slide active" data-slide="1">
-            <h1 class="slide-title">GyroLaser Presentation</h1>
-            <p class="slide-subtitle">Motion-Controlled Laser Pointer</p>
-            <div class="slide-footer">Use arrow keys to navigate</div>
-        </div>
+    <!-- Scene 3: Main System UI -->
+    <div id="scene3" class="scene">
+        
+        <!-- Top Navigation Bar -->
+        <nav class="top-nav">
+            <div class="nav-left">
+                <span class="logo">GL//OS</span>
+                <span class="room-pill">
+                    Room: <strong id="roomIdText">-----</strong>
+                </span>
+            </div>
+            <div class="nav-center">
+                <div id="connectionStatus" class="status-indicator">
+                    <span class="dot"></span>
+                    <span class="text">Waiting for connection...</span>
+                </div>
+            </div>
+            <div class="nav-right">
+                <label for="fileUpload" class="upload-btn">
+                    Upload File
+                </label>
+                <input type="file" id="fileUpload" accept=".pdf,.docx,.ppt,.pptx" />
+            </div>
+        </nav>
 
-        <!-- Slide 2: Content -->
-        <div class="slide" data-slide="2">
-            <h2 class="slide-heading">How It Works</h2>
-            <ul class="slide-content">
-                <li>Connect your mobile device</li>
-                <li>Grant motion sensor permissions</li>
-                <li>Move your phone to control the laser</li>
-                <li>Present with freedom</li>
-            </ul>
-        </div>
+        <!-- Presentation Canvas Area -->
+        <div id="presentationArea" class="presentation-area">
+            <div class="empty-state" id="emptyState">
+                <h3>No Document Loaded</h3>
+                <p>Upload a PDF or DOCX to start presenting</p>
+                <p class="small-text">Use arrow keys to navigate pages once loaded.</p>
+            </div>
+            
+            <canvas id="pdfCanvas" class="hidden"></canvas>
+            
+            <!-- DOCX/HTML Container -->
+            <div id="htmlCanvas" class="hidden" style="width: 80%; height: 80%; overflow-y: auto; background: white; color: black; padding: 2rem; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);"></div>
+            
+            <div id="slideCounterLabel" class="slide-counter hidden">
+                <span id="pageNum">0</span> / <span id="pageCount">0</span>
+            </div>
 
-        <!-- Slide 3: Thank You -->
-        <div class="slide" data-slide="3">
-            <h1 class="slide-title">Thank You!</h1>
-            <p class="slide-subtitle">Questions?</p>
-            <div class="slide-footer">Built with WebSockets & Gyroscope API</div>
+            <!-- Laser Pointer (Physical Glow) -->
+            <div id="laserDot" class="laser-dot">
+                <div class="laser-core"></div>
+                <div class="laser-halo"></div>
+            </div>
+            <div id="laserTrailContainer"></div>
         </div>
-
-        <!-- Laser Pointer Dot -->
-        <div class="laser-dot" id="laserDot"></div>
+        
     </div>
 
-    <!-- Slide Counter -->
-    <div class="slide-counter" id="slideCounter">
-        <span id="currentSlide">1</span> / <span id="totalSlides">3</span>
-    </div>
-
-    <!-- Socket.io Client Library -->
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <!-- Setting the worker src for PDF.js -->
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Application Logic -->
     <script src="app.js"></script>
 </body>
 </html>

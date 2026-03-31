@@ -1,8 +1,6 @@
-<<<<<<< HEAD
 /**
  * GyroLaser Backend
  * Express HTTP server + Socket.io for room pairing and real-time laser relay
- * Run: npm install && npm start
  */
 
 const path = require('path');
@@ -11,41 +9,49 @@ const http = require('http');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
 const { attachSocketHandlers } = require('./socket');
-const { log: debugLog, LOG_PATH } = require('./utils/debugLog');
+const cors = require('cors');
 
-// #region agent log
-debugLog({ location: 'server/index.js:init', message: 'Server module loaded', data: { logPath: LOG_PATH }, timestamp: Date.now(), hypothesisId: 'B' });
-// #endregion
-
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 const HOST = process.env.HOST || 'localhost';
 
 const app = express();
 const server = http.createServer(app);
 
-// Socket.io attached to same HTTP server
+// Enable CORS for API routes if needed
+app.use(cors({
+  origin: [
+    "https://gyrolaser-presenter.vercel.app",
+    "http://localhost:8000",
+    "https://gyrolaser-presenter-wsg9.vercel.app"
+  ],
+  methods: ["GET", "POST", "OPTIONS"],
+  credentials: true
+}));
+
+app.use(express.json());
+
+// Socket.io standard config
 const io = new Server(server, {
   cors: {
     origin: [
       "https://gyrolaser-presenter.vercel.app",
-      "http://localhost:3000",
+      "http://localhost:8000",
       "https://gyrolaser-presenter-wsg9.vercel.app"
-
     ],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "OPTIONS"],
     credentials: true
-  }
+  },
+  pingTimeout: 5000,
+  pingInterval: 10000
 });
 
 attachSocketHandlers(io);
 
-// --- Static files: /desktop and /mobile (prefer frontend/ if present)
-const fs = require('fs');
+// Static file serving logic
 const rootDir = path.join(__dirname, '..');
-const frontendDesktop = path.join(rootDir, 'frontend', 'client-desktop');
-const frontendMobile = path.join(rootDir, 'frontend', 'client-mobile');
-const staticDesktop = fs.existsSync(frontendDesktop) ? frontendDesktop : path.join(rootDir, 'client-desktop');
-const staticMobile = fs.existsSync(frontendMobile) ? frontendMobile : path.join(rootDir, 'client-mobile');
+const staticDesktop = path.join(rootDir, 'client-desktop');
+const staticMobile = path.join(rootDir, 'client-mobile');
+
 app.use('/desktop', express.static(staticDesktop));
 app.use('/mobile', express.static(staticMobile));
 
@@ -65,9 +71,10 @@ app.get('/api/qrcode/:roomId', (req, res) => {
     return;
   }
 
-  const mobileUrl = `https://gyrolaser-presenter-wsg9.vercel.app?room=${roomId}`;
+  // Uses local URL for dev, update if deploying
+  const mobileUrl = `http://${HOST}:${PORT}/mobile?room=${roomId}`;
 
-  QRCode.toBuffer(mobileUrl, { type: 'png', width: 256, margin: 2 })
+  QRCode.toBuffer(mobileUrl, { type: 'png', margin: 2 })
     .then((buffer) => {
       res.setHeader('Content-Type', 'image/png');
       res.send(buffer);
@@ -80,40 +87,9 @@ app.get('/api/qrcode/:roomId', (req, res) => {
 
 // Start server
 server.listen(PORT, () => {
-  // #region agent log
-  const _p = { location: 'server/index.js:listen', message: 'Server started', data: { port: PORT, host: HOST }, timestamp: Date.now(), hypothesisId: 'B' };
-  fetch('http://127.0.0.1:7242/ingest/ef5c1aef-4ac7-4e4a-b493-a44e9beddc9c', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_p) }).catch(() => {});
-  debugLog(_p);
-  // #endregion
   console.log(`GyroLaser server running at http://${HOST}:${PORT}`);
   console.log('  /         → redirects to /desktop');
   console.log('  /desktop  → viewer (slides + laser)');
-  console.log('  /mobile  → controller (gyro laser)');
+  console.log('  /mobile   → controller (gyro laser)');
   console.log('  /api/qrcode/:roomId → QR code PNG');
 });
-=======
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-
-const app = express();
-const server = http.createServer(app);
-
-// Create io instance
-const io = new Server(server);
-
-// Serve static files from client-desktop
-app.use(express.static(path.join(__dirname, '../client-desktop')));
-
-// Serve mobile files at /mobile route
-app.use('/mobile', express.static(path.join(__dirname, '../client-mobile')));
-
-// Initialize socket.io - pass both io and server
-require('./socket')(io, server);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
->>>>>>> 1c1bc0e (updated)

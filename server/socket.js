@@ -1,108 +1,126 @@
 /**
  * Socket.io room and laser relay logic for GyroLaser
- * Handles viewer/controller pairing and real-time laser position forwarding
+ * Connects 1 Viewer -> 1 Controller
  */
 
-/**
- * Attach Socket.io event handlers to the server
- * @param {object} io - Socket.io server instance
- */
 function attachSocketHandlers(io) {
+  // Store room state in memory
+  // { 'roomId': { viewerId: 'socketId', controllerId: 'socketId' } }
+  const roomState = {};
+
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
 
-    /**
-     * Join room as viewer or controller
-     * Viewer: provides roomId from frontend (auto-generated client-side)
-     * Controller: provides roomId to join existing viewer's room
-     */
+    // Ping mechanism exists naturally in socket.io but we can trace connections
     socket.on('join-room', (payload) => {
       const role = payload && payload.role;
-      const roomId = payload && payload.roomId;
+      const roomId = payload && payload.roomId && payload.roomId.trim();
 
-      // Validate room ID
-      if (!roomId || typeof roomId !== 'string') {
+      if (!roomId) {
         socket.emit('error', { message: 'Room ID is required' });
         return;
       }
 
-      // Sanitize and limit room ID
-      const sanitizedRoomId = roomId.trim();
-      if (sanitizedRoomId.length > 50) {
+      if (roomId.length > 50) {
         socket.emit('error', { message: 'Room ID too long' });
         return;
       }
 
+      if (!roomState[roomId]) {
+        roomState[roomId] = { viewerId: null, controllerId: null };
+      }
+
       if (role === 'viewer') {
-        // Viewer: join room with their generated room ID
-        socket.join(sanitizedRoomId);
-        socket.roomId = sanitizedRoomId;
+        socket.join(roomId);
+        socket.roomId = roomId;
         socket.role = 'viewer';
         
-        console.log('Viewer joined room:', sanitizedRoomId);
-        socket.emit('room-joined', { roomId: sanitizedRoomId });
+        roomState[roomId].viewerId = socket.id;
+        console.log(`Viewer joined room: ${roomId}`);
+        
+        socket.emit('room-joined', { roomId: roomId });
         return;
       }
 
       if (role === 'controller') {
-        // Controller: validate that room exists before joining
-        const room = io.sockets.adapter.rooms.get(sanitizedRoomId);
-        
-        if (!room || room.size === 0) {
-          socket.emit('error', { message: 'Room not found. Make sure the desktop viewer is open first.' });
-          return;
+        // Enforce 1 controller per room ideally
+        const currentController = roomState[roomId].controllerId;
+        if (currentController && currentController !== socket.id) {
+          // You might reject, or override. Overriding is often better for ux if a user reconnects.
+          io.to(currentController).emit('error', { message: 'Another controller took over.' });
+          // Optionally disconnect the old controller
         }
 
-        socket.join(sanitizedRoomId);
-        socket.roomId = sanitizedRoomId;
+        socket.join(roomId);
+        socket.roomId = roomId;
         socket.role = 'controller';
+        roomState[roomId].controllerId = socket.id;
         
-        // Notify viewer(s) in the room that a controller joined
-        socket.to(sanitizedRoomId).emit('controller-joined');
-        console.log('Controller joined room:', sanitizedRoomId);
+        // Notify viewer
+        socket.to(roomId).emit('controller-joined');
+        console.log(`Controller joined room: ${roomId}`);
+        socket.emit('room-joined', { roomId: roomId });
         return;
       }
 
-      socket.emit('error', { message: 'Invalid role. Use "viewer" or "controller".' });
+      socket.emit('error', { message: 'Invalid role.' });
     });
 
-    /**
-     * Laser movement: forward from controller to viewer(s) in same room
-     * Supports 30–60 FPS; no throttling on server to avoid lag
-     */
+    // Relay laser coordinates
     socket.on('laser-move', (data) => {
       const roomId = socket.roomId;
       
-      // Only controllers can send laser movements
       if (!roomId || socket.role !== 'controller') {
         return;
       }
 
-      // Validate and clamp coordinates
+      // Validating coordinates
       const x = typeof data.x === 'number' ? Math.max(0, Math.min(1, data.x)) : 0;
       const y = typeof data.y === 'number' ? Math.max(0, Math.min(1, data.y)) : 0;
 
-      // Broadcast to all other clients in the room (viewers)
+      // Broadcast only to viewer(s) in this room
       socket.to(roomId).emit('laser-move', { x, y });
     });
 
-    /**
-     * Disconnection: notify room and clean up
-     */
+    socket.on('trigger-disconnect', () => {
+       // Controller requests manual disconnect
+       const roomId = socket.roomId;
+       if (roomId && socket.role === 'controller') {
+         socket.to(roomId).emit('controller-left');
+         socket.leave(roomId);
+         if (roomState[roomId]?.controllerId === socket.id) {
+            roomState[roomId].controllerId = null;
+         }
+         socket.roomId = null;
+         socket.role = null;
+       }
+    });
+
     socket.on('disconnect', (reason) => {
       const roomId = socket.roomId;
       const role = socket.role;
 
-      if (role === 'controller' && roomId) {
-        socket.to(roomId).emit('controller-left');
-        console.log('Controller left room:', roomId);
+      if (roomId && roomState[roomId]) {
+        if (role === 'controller') {
+          socket.to(roomId).emit('controller-left');
+          console.log(`Controller left room: ${roomId}`);
+          if (roomState[roomId].controllerId === socket.id) {
+             roomState[roomId].controllerId = null;
+          }
+        }
+        if (role === 'viewer') {
+          socket.to(roomId).emit('viewer-left');
+          console.log(`Viewer left room: ${roomId}`);
+          if (roomState[roomId].viewerId === socket.id) {
+             roomState[roomId].viewerId = null;
+          }
+        }
+        
+        // Cleanup empty rooms
+        if (!roomState[roomId].viewerId && !roomState[roomId].controllerId) {
+           delete roomState[roomId];
+        }
       }
-
-      if (role === 'viewer' && roomId) {
-        socket.to(roomId).emit('viewer-left');
-        console.log('Viewer left room:', roomId);
-      }
-
       console.log('Client disconnected:', socket.id, 'Reason:', reason);
     });
   });
